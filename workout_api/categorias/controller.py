@@ -42,8 +42,12 @@ async def query(
     return categorias
 
 
-@router.get("/{id_categoria}",summary="Buscar categoria por id",status_code=status.HTTP_200_OK,
-            response_model=CategoriaSchemaOut)
+@router.get(
+    "/{id_categoria}",
+    summary="Buscar categoria por id",
+    status_code=status.HTTP_200_OK,
+    response_model=CategoriaSchemaOut
+)
 async def get(db_session: DatabaseDependency, id_categoria: UUID4) -> CategoriaSchemaOut:
     categoria_out: CategoriaSchemaOut = (
         await db_session.execute(select(CategoriaModel).filter_by(id=id_categoria))
