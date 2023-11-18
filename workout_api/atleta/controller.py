@@ -4,9 +4,8 @@ from fastapi import APIRouter, status, Body, HTTPException, Query
 from pydantic import UUID4
 
 from workout_api.atleta.models import AtletaModel
-from workout_api.atleta.schemas import AtletaSchemaIn, AtletaSchemaOut, AtletaSchemaPatch
+from workout_api.atleta.schemas import AtletaSchemaIn, AtletaSchemaOut, AtletaSchemaPatch, AllAthletesSchemaOut
 from workout_api.contrib.dependencies import DatabaseDependency
-from sqlalchemy import func
 from sqlalchemy.future import select
 from workout_api.categorias.models import CategoriaModel
 from workout_api.centro_treinamento.models import CentroTreinamentoModel
@@ -53,15 +52,15 @@ async def post(
 
 
 @router.get(
-    "",
+    "/",
     status_code=status.HTTP_200_OK,
     summary="Lista atletas ordenados por nome",
-    response_model=list[AtletaSchemaOut]
+    response_model=list[AllAthletesSchemaOut]
 )
 async def query(
     db_session: DatabaseDependency
-) -> list[AtletaSchemaOut]:
-    atletas: list[AtletaSchemaOut] = (
+) -> list[AllAthletesSchemaOut]:
+    atletas: list[AllAthletesSchemaOut] = (
         await db_session.execute(select(AtletaModel).order_by(AtletaModel.nome))
     ).scalars().all()
 

@@ -33,4 +33,11 @@ class AtletaSchemaPatch(BaseSchema):
     altura: Annotated[Optional[PositiveFloat], Field(None, description="Altura do atleta", example=1.75)]
     sexo: Annotated[Optional[str], Field(None, description="Sexo do atleta", example="M", max_length=1)]
     categoria: Annotated[Optional[CategoriaSchemaIn], Field(None, description="Categoria do atleta")]
-    centro_treinamento: Annotated[Optional[CentroTreinamentoAtleta], Field(None, description="Centro de treinamento do atleta")]
+    centro_treinamento: Annotated[Optional[CentroTreinamentoAtleta], Field(
+        None, description="Centro de treinamento do atleta")]
+
+
+class AllAthletesSchemaOut(BaseSchema):
+    nome: Annotated[str, Field(max_length=100, description="Nome do atleta", example="João da Silva")]
+    centro_treinamento: Annotated[CentroTreinamentoAtleta, Field(description="Centro de treinamento do atleta")]
+    categoria: Annotated[CategoriaSchemaIn, Field(description="Categoria do atleta")]
