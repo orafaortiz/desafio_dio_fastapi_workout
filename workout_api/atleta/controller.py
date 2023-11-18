@@ -55,15 +55,31 @@ async def post(
 @router.get(
     "",
     status_code=status.HTTP_200_OK,
-    summary="Lista atletas ou busca por ID, CPF ou nome",
+    summary="Lista atletas ordenados por nome",
     response_model=list[AtletaSchemaOut]
 )
 async def query(
+    db_session: DatabaseDependency
+) -> list[AtletaSchemaOut]:
+    atletas: list[AtletaSchemaOut] = (
+        await db_session.execute(select(AtletaModel).order_by(AtletaModel.nome))
+    ).scalars().all()
+
+    return atletas
+
+
+@router.get(
+    "/by",
+    status_code=status.HTTP_200_OK,
+    summary="Busca um atleta por id, cpf ou nome",
+    response_model=AtletaSchemaOut
+)
+async def get(
     db_session: DatabaseDependency,
     id_atleta: UUID4 = Query(None),
     nome: str = Query(None),
     cpf: str = Query(None)
-) -> list[AtletaSchemaOut]:
+) -> AtletaSchemaOut:
     custom_query = select(AtletaModel)
 
     if id_atleta:
@@ -75,12 +91,12 @@ async def query(
         custom_query = custom_query.filter(AtletaModel.nome.ilike(pattern))
 
     result = await db_session.execute(custom_query)
-    atletas: list[AtletaSchemaOut] = result.scalars().all()
+    atleta: AtletaSchemaOut = result.scalars().first()
 
-    if not atletas:
+    if not atleta:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Atleta não encontrado")
 
-    return [AtletaSchemaOut.model_validate(atleta) for atleta in atletas]
+    return atleta
 
 
 @router.patch(
