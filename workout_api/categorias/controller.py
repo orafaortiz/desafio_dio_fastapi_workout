@@ -1,5 +1,6 @@
 from fastapi import APIRouter, status, Body, HTTPException
 from pydantic import UUID4
+from sqlalchemy.exc import IntegrityError
 
 from workout_api.categorias.models import CategoriaModel
 from workout_api.categorias.schemas import CategoriaSchemaIn, CategoriaSchemaOut
@@ -21,10 +22,23 @@ async def post(
     categoria_in: CategoriaSchemaIn = Body(...)
 ) -> CategoriaSchemaOut:
 
-    categoria_out = CategoriaSchemaOut(id=uuid4(), **categoria_in.model_dump())
-    categoria_model = CategoriaModel(**categoria_out.model_dump())
-    db_session.add(categoria_model)
-    await db_session.commit()
+    categoria_out = None
+    try:
+        categoria_out = CategoriaSchemaOut(id=uuid4(), **categoria_in.model_dump())
+        categoria_model = CategoriaModel(**categoria_out.model_dump())
+        db_session.add(categoria_model)
+        await db_session.commit()
+
+    except IntegrityError as e:
+        await db_session.rollback()
+        if "duplicate key value" in str(e):
+            raise HTTPException(status_code=status.HTTP_303_SEE_OTHER,
+                                detail=f"Já existe uma categoria com o nome {categoria_in.nome}")
+
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Erro ao criar categoria")
+
     return categoria_out
 
 

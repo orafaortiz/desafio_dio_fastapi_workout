@@ -2,7 +2,7 @@ from uuid import uuid4
 from datetime import datetime
 from fastapi import APIRouter, status, Body, HTTPException, Query
 from pydantic import UUID4
-
+from sqlalchemy.exc import IntegrityError
 from workout_api.atleta.models import AtletaModel
 from workout_api.atleta.schemas import AtletaSchemaIn, AtletaSchemaOut, AtletaSchemaPatch, AllAthletesSchemaOut
 from workout_api.contrib.dependencies import DatabaseDependency
@@ -36,17 +36,24 @@ async def post(
     if centro_treinamento is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Centro de treinamento não encontrado")
 
+    atleta_out = None
     try:
-        atleta_out = AtletaSchemaOut(id=uuid4(), created_at=datetime.utcnow(), **atleta_in.model_dump())
+        atleta_out = AtletaSchemaOut(id=uuid4(), created_at=datetime.utcnow(), **atleta_in.dict())
         atleta_model = AtletaModel(**atleta_out.model_dump(exclude={"categoria", "centro_treinamento"}))
         atleta_model.categoria_id = categoria.pk_id
         atleta_model.centro_treinamento_id = centro_treinamento.pk_id
 
         db_session.add(atleta_model)
         await db_session.commit()
+    except IntegrityError as e:
+        await db_session.rollback()
+        if "duplicate key value" in str(e):
+            raise HTTPException(status_code=status.HTTP_303_SEE_OTHER,
+                                detail=f"Já existe um atleta com o CPF {atleta_in.cpf}")
+
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Erro no banco ao criar atleta")
+                            detail="Erro ao criar atleta")
 
     return atleta_out
 
